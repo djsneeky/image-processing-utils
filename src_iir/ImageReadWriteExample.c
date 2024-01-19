@@ -74,30 +74,60 @@ int main(int argc, char **argv)
 
 void apply2DIIRFilter(uint8_t **input, uint8_t **output, int height, int width)
 {
+    // copy input to double array
+    double **input_double = (double **)get_img(width, height, sizeof(double));
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            input_double[i][j] = (double)input[i][j];
+        }
+    }
     double result;
+    double **output_double = (double **)get_img(width, height, sizeof(double));
     for (int i = 0; i < height; ++i)
     {
         for (int j = 0; j < width; ++j)
         {
             if (i - 1 < 0 && j - 1 < 0)
             {
-                result = 0.01 * input[i][j];
+                result = 0.01 * input_double[i][j];
             }
             else if (i - 1 < 0)
             {
-                result = 0.01 * input[i][j] + 0.9 * (output[i][j - 1]);
+                result = 0.01 * input_double[i][j] + 0.9 * (output_double[i][j - 1]);
             }
             else if (j - 1 < 0)
             {
-                result = 0.01 * input[i][j] + 0.9 * (output[i - 1][j]);
+                result = 0.01 * input_double[i][j] + 0.9 * (output_double[i - 1][j]);
             }
             else
             {
-                result = 0.01 * input[i][j] + 0.9 * (output[i - 1][j] + output[i][j - 1]) - 0.81 * output[i - 1][j - 1];
+                result = 0.01 * input_double[i][j] + 0.9 * (output_double[i - 1][j] + output_double[i][j - 1]) - 0.81 * output_double[i - 1][j - 1];
             }
 
-            // Clip the result to the 0-255 range
-            output[i][j] = (uint8_t)(result < 0 ? 0 : (result > 255 ? 255 : result));
+            output_double[i][j] = result;
+        }
+    }
+
+    // chop output
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            int pixel = (int)output_double[i][j];
+            if (pixel > 255)
+            {
+                output[i][j] = 255;
+            }
+            else if (pixel < 0)
+            {
+                output[i][j] = 0;
+            }
+            else
+            {
+                output[i][j] = pixel;
+            }
         }
     }
 }
